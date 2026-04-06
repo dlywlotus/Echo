@@ -1,8 +1,11 @@
 package com.dlywlotus.echo_backend.listeners;
 
-import java.util.Objects;
-import java.util.concurrent.TimeUnit;
-
+import com.dlywlotus.echo_backend.constants.RedisConstants;
+import com.dlywlotus.echo_backend.constants.StompConstants;
+import com.dlywlotus.echo_backend.dtos.ChatRoomEvent;
+import com.dlywlotus.echo_backend.enums.RoomEventType;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -12,11 +15,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.socket.messaging.SessionConnectedEvent;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 
-import com.dlywlotus.echo_backend.dtos.RoomEvent;
-import com.dlywlotus.echo_backend.enums.RoomEventType;
-
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
@@ -52,15 +52,15 @@ public class WebSocketConnectionListener {
         String redisKey = "session:" + event.getSessionId();
 
         //Remove session from lobby if the user was in it
-        redisTemplate.opsForList().remove("list:waiting_sessions", 1, redisKey);
+        redisTemplate.opsForList().remove(RedisConstants.LOBBY_KEY, 1, redisKey);
 
         // Send "DISCONNECT" event to room topic if the user was in a room
         HashOperations<String, String, String> hashOperations = redisTemplate.opsForHash();
         String roomId = hashOperations.get(redisKey, "roomId");
         if (!Objects.isNull(roomId)) {
             String userId = hashOperations.get(redisKey, "userId");
-            RoomEvent roomEvent = new RoomEvent(RoomEventType.DISCONNECT, userId, null, null);
-            stompTemplate.convertAndSend("/topic/room/" + roomId, roomEvent);
+            ChatRoomEvent roomEvent = new ChatRoomEvent(RoomEventType.DISCONNECT, userId, null, null);
+            stompTemplate.convertAndSend(StompConstants.ROOM_PREFIX + roomId, roomEvent);
         }
 
         //Remove session from redis
