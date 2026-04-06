@@ -3,6 +3,7 @@ package com.dlywlotus.echo_backend.controllers;
 import com.dlywlotus.echo_backend.Exceptions.WebSocketException;
 import com.dlywlotus.echo_backend.dtos.JoinRoomRequest;
 import com.dlywlotus.echo_backend.dtos.SendMessageRequest;
+import com.dlywlotus.echo_backend.dtos.SendTypingRequest;
 import com.dlywlotus.echo_backend.services.ChatRoomService;
 import com.dlywlotus.echo_backend.services.LobbyService;
 import lombok.RequiredArgsConstructor;
@@ -32,11 +33,18 @@ public class WebSocketController {
         chatRoomService.leaveRoom(redisKey, roomId);
     }
 
-    @MessageMapping("/room/{roomId}/send")
-    public void sendMessage(@Payload SendMessageRequest request, @DestinationVariable String roomId,
-                            SimpMessageHeaderAccessor simpMessageHeaderAccessor) {
+    @MessageMapping("/room/{roomId}/message")
+    public void sendMessageEvent(@Payload SendMessageRequest request, @DestinationVariable String roomId,
+                                 SimpMessageHeaderAccessor simpMessageHeaderAccessor) {
         String redisKey = getRedisKey(simpMessageHeaderAccessor);
-        chatRoomService.sendMessageToRoom(redisKey, request.content(), roomId);
+        chatRoomService.sendMessageEvent(redisKey, request.content(), roomId);
+    }
+
+    @MessageMapping("/room/{roomId}/typing")
+    public void sendTypingEvent(@Payload SendTypingRequest request, @DestinationVariable String roomId,
+                                SimpMessageHeaderAccessor simpMessageHeaderAccessor) {
+        String redisKey = getRedisKey(simpMessageHeaderAccessor);
+        chatRoomService.sendTypingEvent(redisKey, request.isTyping(), roomId);
     }
 
     private String getRedisKey(SimpMessageHeaderAccessor simpMessageHeaderAccessor) {

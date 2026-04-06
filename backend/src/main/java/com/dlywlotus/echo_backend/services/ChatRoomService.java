@@ -20,15 +20,30 @@ public class ChatRoomService {
         redisTemplate.opsForHash().delete(redisKey, RedisConstants.ROOM_ID_HASH_KEY);
 
         // Send "DISCONNECT" event to room topic
-        String userId = redisTemplate.<String, String>opsForHash().get(redisKey, RedisConstants.USER_ID_HASH_KEY);
+        String userId = getUserId(redisKey);
         ChatRoomEvent roomEvent = new ChatRoomEvent(RoomEventType.DISCONNECT, userId, null, null);
-        stompTemplate.convertAndSend(StompConstants.ROOM_PREFIX + roomId, roomEvent);
+        sendRoomEvent(roomId, roomEvent);
     }
 
-    public void sendMessageToRoom(String redisKey, String content, String roomId) {
+    public void sendMessageEvent(String redisKey, String content, String roomId) {
         //Send "MESSAGE" event to room topic
-        String userId = redisTemplate.<String, String>opsForHash().get(redisKey, RedisConstants.USER_ID_HASH_KEY);
+        String userId = getUserId(redisKey);
         ChatRoomEvent roomEvent = new ChatRoomEvent(RoomEventType.MESSAGE, userId, content, null);
+        sendRoomEvent(roomId, roomEvent);
+    }
+
+    public void sendTypingEvent(String redisKey, boolean isTyping, String roomId) {
+        //Send "TYPING" event to room topic
+        String userId = getUserId(redisKey);
+        ChatRoomEvent roomEvent = new ChatRoomEvent(RoomEventType.TYPING, userId, null, isTyping);
+        sendRoomEvent(roomId, roomEvent);
+    }
+
+    public String getUserId(String redisKey) {
+        return redisTemplate.<String, String>opsForHash().get(redisKey, RedisConstants.USER_ID_HASH_KEY);
+    }
+
+    public void sendRoomEvent(String roomId, ChatRoomEvent roomEvent) {
         stompTemplate.convertAndSend(StompConstants.ROOM_PREFIX + roomId, roomEvent);
     }
 }
