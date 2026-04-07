@@ -4,6 +4,7 @@ import com.dlywlotus.echo_backend.constants.RedisConstants;
 import com.dlywlotus.echo_backend.constants.StompConstants;
 import com.dlywlotus.echo_backend.dtos.RoomDetails;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class LobbyService {
@@ -19,6 +21,7 @@ public class LobbyService {
 
     public void processQueue() {
         if (getQueueSize() < 2) return;
+        log.info(">>>>>>>>>>>>>>>>>>>> PROCESSING QUEUE");
 
         String userOneKey = popFromQueue();
         String userTwoKey = popFromQueue();
@@ -36,7 +39,6 @@ public class LobbyService {
             joinQueue(userOneKey, userOneName);
             return;
         }
-
         String userOneId = hashOps.get(userOneKey, RedisConstants.USER_ID_HASH_KEY);
         String userTwoId = hashOps.get(userTwoKey, RedisConstants.USER_ID_HASH_KEY);
 
@@ -50,7 +52,6 @@ public class LobbyService {
         stompTemplate.convertAndSend(StompConstants.getUserNewRoomTopic(userOneId), chatRoom);
         stompTemplate.convertAndSend(StompConstants.getUserNewRoomTopic(userTwoId), chatRoom);
     }
-
 
     public void joinQueue(String redisKey, String username) {
         // Add session to the lobby
