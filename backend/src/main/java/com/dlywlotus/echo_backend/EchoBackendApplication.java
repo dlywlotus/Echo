@@ -8,10 +8,9 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication
 public class EchoBackendApplication {
     //TODO: Integration tests
-    // 1. Edge case where user disconnects while the cron job is running
-    // 3. Test if system can handle user spamming join room button (assuming it is not handled on FE)
-
-    // Find out purpose of setting roomId for users
+    // 1. Test that user A receives DISCONNECT event when prompting "/room/{roomId}/validate" route
+    // given that user B is already not in the redis set
+    // 2. Test if system can handle user spamming join room button (assuming it is not handled on FE)
 
     public static void main(String[] args) {
         SpringApplication.run(EchoBackendApplication.class, args);
