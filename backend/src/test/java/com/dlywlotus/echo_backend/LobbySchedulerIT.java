@@ -1,12 +1,19 @@
 package com.dlywlotus.echo_backend;
 
-import com.dlywlotus.echo_backend.TestStomp.StompUtils;
-import com.dlywlotus.echo_backend.constants.StompConstants;
-import com.dlywlotus.echo_backend.dtos.JoinRoomRequest;
-import com.dlywlotus.echo_backend.dtos.RoomDetails;
-import lombok.extern.slf4j.Slf4j;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.lang.reflect.Type;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,16 +25,13 @@ import org.springframework.messaging.simp.stomp.StompFrameHandler;
 import org.springframework.messaging.simp.stomp.StompHeaders;
 import org.springframework.messaging.simp.stomp.StompSession;
 
-import java.lang.reflect.Type;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import com.dlywlotus.echo_backend.TestStomp.StompUtils;
+import com.dlywlotus.echo_backend.constants.StompConstants;
+import com.dlywlotus.echo_backend.dtos.JoinRoomRequest;
+import com.dlywlotus.echo_backend.dtos.RoomDetails;
+import com.dlywlotus.echo_backend.services.LobbyService;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -36,25 +40,24 @@ class LobbySchedulerIT {
     private int serverPort;
     @Autowired
     private RedisTemplate<String, String> redisTemplate;
-
+    @Autowired
+    private LobbyService lobbyService;
+    private String userOneId;
+    private String userTwoId;
+    private StompSession userOneSession;
+    private StompSession userTwoSession;
+    private CompletableFuture<RoomDetails> roomResultCompletableFuture;
 
     @BeforeEach
-    void afterEach() {
-        redisTemplate.execute((RedisCallback<Object>) connection -> {
-            connection.serverCommands().flushDb();
-            return null;
-        });
-    }
+    void beforeEach() throws ExecutionException, InterruptedException {
+        // Simulate two users connecting to the websocket
+        userOneId = UUID.randomUUID().toString();
+        userTwoId = UUID.randomUUID().toString();
+        userOneSession = StompUtils.connect(serverPort, userOneId);
+        userTwoSession = StompUtils.connect(serverPort, userTwoId);
 
-    @Test
-    void givenTwoUsersInQueue_whenSchedulerTriggers_createChatRoom() throws InterruptedException, ExecutionException, TimeoutException {
-        String userOneId = UUID.randomUUID().toString();
-        String userTwoId = UUID.randomUUID().toString();
-        StompSession userOneSession = StompUtils.connect(serverPort, userOneId);
-        StompSession userTwoSession = StompUtils.connect(serverPort, userTwoId);
-
-        // Subscribe to the "new room" topic for user one
-        CompletableFuture<RoomDetails> roomResultCompletableFuture = new CompletableFuture<>();
+        // Subscribe user one to the "new room" topic
+        roomResultCompletableFuture = new CompletableFuture<>();
         userOneSession.subscribe(StompConstants.getUserNewRoomTopic(userOneId), new StompFrameHandler() {
             @Override
             public @NonNull Type getPayloadType(@NonNull StompHeaders headers) {
@@ -67,12 +70,29 @@ class LobbySchedulerIT {
                 roomResultCompletableFuture.complete((RoomDetails) payload);
             }
         });
+    }
 
+    @AfterEach
+    void afterEach() {
+        // Clean up socket connections
+        userOneSession.disconnect();
+        userTwoSession.disconnect();
+
+        // Clear redis keys (sessions and the lobby queue)
+        redisTemplate.execute((RedisCallback<Object>) connection -> {
+            connection.serverCommands().flushDb();
+            return null;
+        });
+    }
+
+    @Test
+    void givenTwoUsersInQueue_whenSchedulerTriggers_createChatRoom() throws ExecutionException, InterruptedException, TimeoutException {
         // Add both users to the lobby
         userOneSession.send("/app/lobby/join", new JoinRoomRequest("Alice"));
         userTwoSession.send("/app/lobby/join", new JoinRoomRequest("Bob"));
 
-        // Assert that both users ids are in the created room
+        // Assert that scheduler successfully popped the two users from the queue, created a room
+        // and sent the new room event to user one.
         RoomDetails roomResult = roomResultCompletableFuture.get(10, TimeUnit.SECONDS);
         Set<String> roomUserIds = new HashSet<>();
         roomUserIds.add(roomResult.userOneId());

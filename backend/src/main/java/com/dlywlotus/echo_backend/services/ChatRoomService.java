@@ -1,13 +1,15 @@
 package com.dlywlotus.echo_backend.services;
 
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.stereotype.Service;
+
 import com.dlywlotus.echo_backend.constants.RedisConstants;
 import com.dlywlotus.echo_backend.constants.StompConstants;
 import com.dlywlotus.echo_backend.dtos.ChatRoomEvent;
 import com.dlywlotus.echo_backend.enums.RoomEventType;
+
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
@@ -16,12 +18,24 @@ public class ChatRoomService {
     private final RedisTemplate<String, String> redisTemplate;
 
     public void leaveRoom(String redisKey, String roomId) {
-        // Delete room entry from redis hash
-        redisTemplate.opsForHash().delete(redisKey, RedisConstants.ROOM_ID_HASH_KEY);
+        // Remove user session from redis set
+        redisTemplate.opsForSet().remove(RedisConstants.getRoomRedisKey(roomId), redisKey);
 
         // Send "DISCONNECT" event to room topic
-        String userId = getUserId(redisKey);
-        ChatRoomEvent roomEvent = new ChatRoomEvent(RoomEventType.DISCONNECT, userId, null, null);
+        ChatRoomEvent roomEvent = new ChatRoomEvent(RoomEventType.DISCONNECT, null, null, null);
+        sendRoomEvent(roomId, roomEvent);
+
+    }
+
+    public void validateRoom(String roomId) {
+        // Check if the room exists and has two people in it
+        String roomRedisKey = RedisConstants.getRoomRedisKey(roomId);
+        if (redisTemplate.hasKey(roomRedisKey) && redisTemplate.opsForSet().size(roomRedisKey) == 2) {
+            return;
+        }
+
+        // Send "DISCONNECT" event to room topic
+        ChatRoomEvent roomEvent = new ChatRoomEvent(RoomEventType.DISCONNECT, null, null, null);
         sendRoomEvent(roomId, roomEvent);
     }
 

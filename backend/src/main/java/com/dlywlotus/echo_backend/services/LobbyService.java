@@ -1,16 +1,18 @@
 package com.dlywlotus.echo_backend.services;
 
-import com.dlywlotus.echo_backend.constants.RedisConstants;
-import com.dlywlotus.echo_backend.constants.StompConstants;
-import com.dlywlotus.echo_backend.dtos.RoomDetails;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.util.UUID;
+
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.UUID;
+import com.dlywlotus.echo_backend.constants.RedisConstants;
+import com.dlywlotus.echo_backend.constants.StompConstants;
+import com.dlywlotus.echo_backend.dtos.RoomDetails;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
@@ -27,7 +29,7 @@ public class LobbyService {
         String userTwoKey = popFromQueue();
         HashOperations<String, String, String> hashOps = redisTemplate.opsForHash();
 
-        //If the user B disconnected, add user A back to the front of the queue
+        // If the user B disconnected, add user A back to the front of the queue
         if (!redisTemplate.hasKey(userOneKey) && !redisTemplate.hasKey(userTwoKey)) {
             return;
         } else if (!redisTemplate.hasKey(userOneKey)) {
@@ -41,14 +43,16 @@ public class LobbyService {
         }
         String userOneId = hashOps.get(userOneKey, RedisConstants.USER_ID_HASH_KEY);
         String userTwoId = hashOps.get(userTwoKey, RedisConstants.USER_ID_HASH_KEY);
+        UUID roomId = UUID.randomUUID();
 
-        //Create a chat room with the details of both users
-        RoomDetails chatRoom = new RoomDetails(UUID.randomUUID(),
+        // Add user session ids to redis set
+        redisTemplate.opsForSet().add(RedisConstants.getRoomRedisKey(roomId.toString()), userOneKey, userTwoKey);
+
+        // Send message to both users
+        RoomDetails chatRoom = new RoomDetails(roomId,
                 userOneId, hashOps.get(userOneKey, RedisConstants.USER_NAME_HASH_KEY),
                 userTwoId, hashOps.get(userTwoKey, RedisConstants.USER_NAME_HASH_KEY)
         );
-
-        //Send message to both users
         stompTemplate.convertAndSend(StompConstants.getUserNewRoomTopic(userOneId), chatRoom);
         stompTemplate.convertAndSend(StompConstants.getUserNewRoomTopic(userTwoId), chatRoom);
     }

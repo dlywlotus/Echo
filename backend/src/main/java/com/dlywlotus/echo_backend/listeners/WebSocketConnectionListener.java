@@ -1,11 +1,8 @@
 package com.dlywlotus.echo_backend.listeners;
 
-import com.dlywlotus.echo_backend.constants.RedisConstants;
-import com.dlywlotus.echo_backend.constants.StompConstants;
-import com.dlywlotus.echo_backend.dtos.ChatRoomEvent;
-import com.dlywlotus.echo_backend.enums.RoomEventType;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
+
 import org.springframework.context.event.EventListener;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -15,8 +12,13 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.socket.messaging.SessionConnectEvent;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 
-import java.util.Objects;
-import java.util.concurrent.TimeUnit;
+import com.dlywlotus.echo_backend.constants.RedisConstants;
+import com.dlywlotus.echo_backend.constants.StompConstants;
+import com.dlywlotus.echo_backend.dtos.ChatRoomEvent;
+import com.dlywlotus.echo_backend.enums.RoomEventType;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
@@ -43,7 +45,6 @@ public class WebSocketConnectionListener {
 
         // Set a TTL of 1 day in case the server crashes and session disconnect event doesn't fire
         redisTemplate.expire(redisKey, 1, TimeUnit.DAYS);
-
     }
 
     @EventListener
@@ -54,13 +55,16 @@ public class WebSocketConnectionListener {
         //Remove session from lobby if the user was in it
         redisTemplate.opsForList().remove(RedisConstants.LOBBY_KEY, 1, redisKey);
 
-        // Send "DISCONNECT" event to room topic if the user was in a room
         HashOperations<String, String, String> hashOperations = redisTemplate.opsForHash();
         String roomId = hashOperations.get(redisKey, "roomId");
         if (!Objects.isNull(roomId)) {
+            // Send "DISCONNECT" event to the room topic to notify the other user
             String userId = hashOperations.get(redisKey, "userId");
             ChatRoomEvent roomEvent = new ChatRoomEvent(RoomEventType.DISCONNECT, userId, null, null);
             stompTemplate.convertAndSend(StompConstants.ROOM_PREFIX + roomId, roomEvent);
+
+            // Remove user session from room redis set
+            redisTemplate.opsForSet().remove(RedisConstants.getRoomRedisKey(roomId), redisKey);
         }
 
         //Remove session from redis
