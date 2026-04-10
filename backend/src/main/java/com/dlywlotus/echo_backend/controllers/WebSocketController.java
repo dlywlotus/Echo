@@ -1,19 +1,19 @@
 package com.dlywlotus.echo_backend.controllers;
 
-import org.springframework.messaging.handler.annotation.DestinationVariable;
-import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.handler.annotation.Payload;
-import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.dlywlotus.echo_backend.Exceptions.WebSocketException;
 import com.dlywlotus.echo_backend.dtos.JoinRoomRequest;
 import com.dlywlotus.echo_backend.dtos.SendMessageRequest;
 import com.dlywlotus.echo_backend.dtos.SendTypingRequest;
 import com.dlywlotus.echo_backend.services.ChatRoomService;
 import com.dlywlotus.echo_backend.services.LobbyService;
-
 import lombok.RequiredArgsConstructor;
+import org.springframework.messaging.handler.annotation.DestinationVariable;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
+import org.springframework.web.bind.annotation.RestController;
+
+import static com.dlywlotus.echo_backend.constants.RedisConstants.SESSION_KEY_PREFIX;
 
 @RestController
 @RequiredArgsConstructor
@@ -60,6 +60,6 @@ public class WebSocketController {
         if (sessionId == null) {
             throw new WebSocketException("Invalid web socket session id");
         }
-        return "session:" + sessionId;
+        return SESSION_KEY_PREFIX + sessionId;
     }
 }

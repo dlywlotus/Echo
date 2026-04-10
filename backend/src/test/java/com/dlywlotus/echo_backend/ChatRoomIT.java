@@ -1,6 +1,23 @@
 package com.dlywlotus.echo_backend;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import com.dlywlotus.echo_backend.TestStomp.StompUtils;
+import com.dlywlotus.echo_backend.constants.RedisConstants;
+import com.dlywlotus.echo_backend.constants.StompConstants;
+import com.dlywlotus.echo_backend.dtos.ChatRoomEvent;
+import com.dlywlotus.echo_backend.dtos.SendMessageRequest;
+import com.dlywlotus.echo_backend.enums.RoomEventType;
+import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.messaging.simp.stomp.StompFrameHandler;
+import org.springframework.messaging.simp.stomp.StompHeaders;
+import org.springframework.messaging.simp.stomp.StompSession;
 
 import java.lang.reflect.Type;
 import java.util.UUID;
@@ -9,23 +26,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.messaging.simp.stomp.StompFrameHandler;
-import org.springframework.messaging.simp.stomp.StompHeaders;
-import org.springframework.messaging.simp.stomp.StompSession;
-
-import com.dlywlotus.echo_backend.TestStomp.StompUtils;
-import com.dlywlotus.echo_backend.constants.StompConstants;
-import com.dlywlotus.echo_backend.dtos.ChatRoomEvent;
-import com.dlywlotus.echo_backend.dtos.SendMessageRequest;
-
-import lombok.extern.slf4j.Slf4j;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -34,11 +35,11 @@ class ChatRoomIT {
     private int serverPort;
     @Autowired
     private SimpMessagingTemplate simpMessagingTemplate;
+    @Autowired
+    private RedisTemplate<String, String> redisTemplate;
 
     @Test
     void givenInChatRoom_whenSendMessage_otherUserReceives() throws ExecutionException, InterruptedException, TimeoutException {
-        // STATE SET UP BEGIN
-
         // Simulate two users connecting to the websocket
         String userOneId = UUID.randomUUID().toString();
         String userTwoId = UUID.randomUUID().toString();
@@ -48,31 +49,68 @@ class ChatRoomIT {
         UUID roomId = UUID.randomUUID();
 
         // Subscribe user one to the room's topic
-        CompletableFuture<String> messageContentCompletableFuture = new CompletableFuture<>();
+        CompletableFuture<ChatRoomEvent> messageContentCompletableFuture = new CompletableFuture<>();
         userOneSession.subscribe(StompConstants.ROOM_PREFIX + roomId, new StompFrameHandler() {
             @Override
             public @NonNull Type getPayloadType(@NonNull StompHeaders headers) {
                 return ChatRoomEvent.class;
             }
 
-            // Runs when an event is pushed to the room's topic
             @Override
             public void handleFrame(@NonNull StompHeaders headers, @Nullable Object payload) {
-                log.info(">>>>>>>>>>>>>>>>>>>> RECEIVED MESSAGE");
+                log.info(">>>>>>>>>>>>>>>>>>>> RECEIVED CHAT MESSAGE");
                 if (payload == null) return;
-                messageContentCompletableFuture.complete(((ChatRoomEvent) payload).content());
+                messageContentCompletableFuture.complete(((ChatRoomEvent) payload));
             }
         });
-        // STATE SET UP END
 
         // Verify that user one receives user two's message
         String stompDestination = "/app/room/" + roomId + "/message";
         userTwoSession.send(stompDestination, new SendMessageRequest("Hello!"));
-        String receivedMessage = messageContentCompletableFuture.get(10, TimeUnit.SECONDS);
+        String receivedMessage = messageContentCompletableFuture.get(10, TimeUnit.SECONDS).content();
         assertEquals("Hello!", receivedMessage);
 
         // Clean up web socket connections
         userOneSession.disconnect();
         userTwoSession.disconnect();
     }
+
+    @Test
+    void givenUserTwoLeft_AfterRoomCreated_userOneReceivesDisconnectEvent() throws ExecutionException, InterruptedException, TimeoutException {
+        String userOneId = UUID.randomUUID().toString();
+        StompSession userOneSession = StompUtils.connect(serverPort, userOneId);
+        String userOneKey = RedisConstants.SESSION_KEY_PREFIX + userOneSession.getSessionId();
+
+        // Simulate room creation
+        String roomId = UUID.randomUUID().toString();
+        redisTemplate.opsForSet().add(RedisConstants.getRoomRedisKey(roomId), userOneKey);
+
+        // Subscribe user one to the room's topic
+        CompletableFuture<ChatRoomEvent> messageContentCompletableFuture = new CompletableFuture<>();
+        userOneSession.subscribe(StompConstants.ROOM_PREFIX + roomId, new StompFrameHandler() {
+            @Override
+            public @NonNull Type getPayloadType(@NonNull StompHeaders headers) {
+                return ChatRoomEvent.class;
+            }
+
+            @Override
+            public void handleFrame(@NonNull StompHeaders headers, @Nullable Object payload) {
+                log.info(">>>>>>>>>>>>>>>>>>>> RECEIVED DISCONNECT EVENT");
+                if (payload == null) return;
+                messageContentCompletableFuture.complete(((ChatRoomEvent) payload));
+            }
+        });
+
+        // Validate if room has two people
+        String stompDestination = "/app/room/" + roomId + "/validate";
+        userOneSession.send(stompDestination, new ChatRoomEvent(null, null, null, null));
+
+        // Verify that user one receives user two's DISCONNECT event
+        RoomEventType roomEventType = messageContentCompletableFuture.get(10, TimeUnit.SECONDS).type();
+        assertEquals(RoomEventType.DISCONNECT, roomEventType);
+
+        // Clean up web socket connections
+        userOneSession.disconnect();
+    }
+
 }

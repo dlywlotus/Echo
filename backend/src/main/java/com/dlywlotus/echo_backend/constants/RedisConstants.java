@@ -6,6 +6,7 @@ public class RedisConstants {
     // Redis keys and key prefixes
     public static final String LOBBY_KEY = "list:waiting_sessions";
     public static final String ROOM_KEY_PREFIX = "room:";
+    public static final String SESSION_KEY_PREFIX = "session:";
 
     // Redis hash keys and hash key prefixes
     public static final String USER_NAME_HASH_KEY = "username";
