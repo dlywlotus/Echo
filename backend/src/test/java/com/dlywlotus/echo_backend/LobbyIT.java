@@ -37,7 +37,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class LobbySchedulerIT {
+class LobbyIT {
     @LocalServerPort
     private int serverPort;
     @Autowired
@@ -58,20 +58,6 @@ class LobbySchedulerIT {
         userOneSession = StompUtils.connect(serverPort, userOneId);
         userTwoSession = StompUtils.connect(serverPort, userTwoId);
 
-        // Subscribe user one to the "new room" topic
-        roomResultCompletableFuture = new CompletableFuture<>();
-        userOneSession.subscribe(StompConstants.getUserNewRoomTopic(userOneId), new StompFrameHandler() {
-            @Override
-            public @NonNull Type getPayloadType(@NonNull StompHeaders headers) {
-                return RoomDetails.class;
-            }
-
-            @Override
-            public void handleFrame(@NonNull StompHeaders headers, @Nullable Object payload) {
-                log.info(">>>>>>>>>>>>>>>>>>>> RECEIVED NEW ROOM EVENT");
-                roomResultCompletableFuture.complete((RoomDetails) payload);
-            }
-        });
     }
 
     @AfterEach
@@ -89,6 +75,21 @@ class LobbySchedulerIT {
 
     @Test
     void givenTwoUsersInQueue_whenSchedulerTriggers_createChatRoom() throws ExecutionException, InterruptedException, TimeoutException {
+        // Subscribe user one to the "new room" topic
+        roomResultCompletableFuture = new CompletableFuture<>();
+        userOneSession.subscribe(StompConstants.getUserNewRoomTopic(userOneId), new StompFrameHandler() {
+            @Override
+            public @NonNull Type getPayloadType(@NonNull StompHeaders headers) {
+                return RoomDetails.class;
+            }
+
+            @Override
+            public void handleFrame(@NonNull StompHeaders headers, @Nullable Object payload) {
+                log.info(">>>>>>>>>>>>>>>>>>>> RECEIVED NEW ROOM EVENT");
+                roomResultCompletableFuture.complete((RoomDetails) payload);
+            }
+        });
+
         // Add both users to the lobby
         userOneSession.send("/app/lobby/join", new JoinRoomRequest("Alice"));
         userTwoSession.send("/app/lobby/join", new JoinRoomRequest("Bob"));
@@ -107,5 +108,19 @@ class LobbySchedulerIT {
         await().atMost(5, TimeUnit.SECONDS).untilAsserted(
                 () -> assertEquals(1, lobbyService.getQueueSize())
         );
+    }
+
+    @Test
+    public void givenUserAlreadyInLobby_whenJoinLobbyAgain_userIsNotAddedToLobby() {
+        userOneSession.send("/app/lobby/join", new JoinRoomRequest("Alice"));
+
+        // Wait for first lobby join then join again
+        await().atMost(2, TimeUnit.SECONDS).until(() -> lobbyService.getQueueSize() == 1);
+        userOneSession.send("/app/lobby/join", new JoinRoomRequest("Alice"));
+
+        // Check that the queue size remains 1
+        await().atMost(4, TimeUnit.SECONDS)
+                .during(2, TimeUnit.SECONDS)
+                .until(() -> lobbyService.getQueueSize() == 1);
     }
 }

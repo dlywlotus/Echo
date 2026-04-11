@@ -61,7 +61,6 @@ public class LobbyService {
         if (redisTemplate.opsForSet().isMember(RedisConstants.LOBBY_SET_KEY, redisKey)) {
             return;
         }
-
         // Add session to the lobby list and lobby set
         redisTemplate.opsForList().rightPush(RedisConstants.LOBBY_LIST_KEY, redisKey);
         redisTemplate.opsForSet().add(RedisConstants.LOBBY_SET_KEY, redisKey);
@@ -78,5 +77,4 @@ public class LobbyService {
     public long getQueueSize() {
         return redisTemplate.opsForList().size(RedisConstants.LOBBY_LIST_KEY);
     }
-
 }
