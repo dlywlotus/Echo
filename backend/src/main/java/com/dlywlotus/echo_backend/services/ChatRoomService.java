@@ -18,6 +18,8 @@ public class ChatRoomService {
     private final RedisTemplate<String, String> redisTemplate;
 
     public void leaveRoom(String redisKey, String roomId) {
+        if (!isInRoom(redisKey, roomId)) return;
+
         // Remove user session from redis set
         redisTemplate.opsForSet().remove(RedisConstants.getRoomRedisKey(roomId), redisKey);
 
@@ -40,6 +42,8 @@ public class ChatRoomService {
     }
 
     public void sendMessageEvent(String redisKey, String content, String roomId) {
+        if (!isInRoom(redisKey, roomId)) return;
+
         //Send "MESSAGE" event to room topic
         String userId = getUserId(redisKey);
         ChatRoomEvent roomEvent = new ChatRoomEvent(RoomEventType.MESSAGE, userId, content, null);
@@ -47,10 +51,16 @@ public class ChatRoomService {
     }
 
     public void sendTypingEvent(String redisKey, boolean isTyping, String roomId) {
+        if (!isInRoom(redisKey, roomId)) return;
+
         //Send "TYPING" event to room topic
         String userId = getUserId(redisKey);
         ChatRoomEvent roomEvent = new ChatRoomEvent(RoomEventType.TYPING, userId, null, isTyping);
         sendRoomEvent(roomId, roomEvent);
+    }
+
+    public boolean isInRoom(String redisKey, String roomId) {
+        return redisTemplate.opsForSet().isMember(RedisConstants.getRoomRedisKey(roomId), redisKey);
     }
 
     public String getUserId(String redisKey) {

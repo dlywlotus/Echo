@@ -11,16 +11,21 @@ import java.util.concurrent.TimeoutException;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.data.redis.core.RedisCallback;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.stomp.StompFrameHandler;
 import org.springframework.messaging.simp.stomp.StompHeaders;
 import org.springframework.messaging.simp.stomp.StompSession;
+import org.springframework.messaging.simp.user.SimpUserRegistry;
 
 import com.dlywlotus.echo_backend.TestStomp.StompUtils;
+import com.dlywlotus.echo_backend.constants.RedisConstants;
 import com.dlywlotus.echo_backend.constants.StompConstants;
 import com.dlywlotus.echo_backend.dtos.ChatRoomEvent;
 import com.dlywlotus.echo_backend.dtos.SendMessageRequest;
@@ -34,18 +39,34 @@ class ChatRoomIT {
     private int serverPort;
     @Autowired
     private SimpMessagingTemplate simpMessagingTemplate;
+    @Autowired
+    private SimpUserRegistry simpUserRegistry;
+    @Autowired
+    private RedisTemplate<String, String> redisTemplate;
+
+    @AfterEach
+    void afterEach() {
+        // Clear redis keys (sessions and the lobby queue)
+        redisTemplate.execute((RedisCallback<Object>) connection -> {
+            connection.serverCommands().flushDb();
+            return null;
+        });
+    }
 
     @Test
     void givenInChatRoom_whenSendMessage_otherUserReceives() throws ExecutionException, InterruptedException, TimeoutException {
-        // STATE SET UP BEGIN
-
         // Simulate two users connecting to the websocket
         String userOneId = UUID.randomUUID().toString();
         String userTwoId = UUID.randomUUID().toString();
         StompSession userOneSession = StompUtils.connect(serverPort, userOneId);
         StompSession userTwoSession = StompUtils.connect(serverPort, userTwoId);
 
-        UUID roomId = UUID.randomUUID();
+        // Simulate two users joining a room (w/o using the lobby scheduler and join room methods)
+        String roomId = UUID.randomUUID().toString();
+        simpUserRegistry.getUsers().forEach(user -> {
+            if (user.getPrincipal() == null) return;
+            redisTemplate.opsForSet().add(RedisConstants.getRoomRedisKey(roomId), user.getName());
+        });
 
         // Subscribe user one to the room's topic
         CompletableFuture<String> messageContentCompletableFuture = new CompletableFuture<>();
@@ -63,7 +84,6 @@ class ChatRoomIT {
                 messageContentCompletableFuture.complete(((ChatRoomEvent) payload).content());
             }
         });
-        // STATE SET UP END
 
         // Verify that user one receives user two's message
         String stompDestination = "/app/room/" + roomId + "/message";

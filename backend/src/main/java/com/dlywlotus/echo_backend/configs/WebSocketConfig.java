@@ -14,6 +14,8 @@ import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBr
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
+import com.dlywlotus.echo_backend.constants.RedisConstants;
+
 @Configuration
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
@@ -47,7 +49,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
                     if (sessionId != null) {
                         // Assign the session ID as the Principal's name
-                        accessor.setUser(() -> sessionId);
+                        accessor.setUser(() -> RedisConstants.SESSION_KEY_PREFIX + sessionId);
                     }
                 }
                 return message;
