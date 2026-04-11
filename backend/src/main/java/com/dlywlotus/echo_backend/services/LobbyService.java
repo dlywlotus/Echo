@@ -58,18 +58,25 @@ public class LobbyService {
     }
 
     public void joinQueue(String redisKey, String username) {
-        // Add session to the lobby
-        redisTemplate.opsForList().rightPush(RedisConstants.LOBBY_KEY, redisKey);
+        if (redisTemplate.opsForSet().isMember(RedisConstants.LOBBY_SET_KEY, redisKey)) {
+            return;
+        }
+
+        // Add session to the lobby list and lobby set
+        redisTemplate.opsForList().rightPush(RedisConstants.LOBBY_LIST_KEY, redisKey);
+        redisTemplate.opsForSet().add(RedisConstants.LOBBY_SET_KEY, redisKey);
         // Set username for session
         redisTemplate.opsForHash().put(redisKey, RedisConstants.USER_NAME_HASH_KEY, username);
     }
 
     public String popFromQueue() {
-        return redisTemplate.opsForList().leftPop(RedisConstants.LOBBY_KEY);
+        String nextUserInLine = redisTemplate.opsForList().leftPop(RedisConstants.LOBBY_LIST_KEY);
+        redisTemplate.opsForSet().remove(RedisConstants.LOBBY_SET_KEY, nextUserInLine);
+        return nextUserInLine;
     }
 
     public long getQueueSize() {
-        return redisTemplate.opsForList().size(RedisConstants.LOBBY_KEY);
+        return redisTemplate.opsForList().size(RedisConstants.LOBBY_LIST_KEY);
     }
 
 }

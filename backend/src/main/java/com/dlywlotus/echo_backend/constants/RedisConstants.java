@@ -4,7 +4,8 @@ public class RedisConstants {
     // Note: KEY refers to the redis key, the outer key, while HASH_KEY refers to the inner key inside a redis hash
 
     // Redis keys and key prefixes
-    public static final String LOBBY_KEY = "list:waiting_sessions";
+    public static final String LOBBY_LIST_KEY = "list:sessions_in_lobby";
+    public static final String LOBBY_SET_KEY = "set:sessions_in_lobby";
     public static final String ROOM_KEY_PREFIX = "room:";
     public static final String SESSION_KEY_PREFIX = "session:";
     // Redis hash keys and hash key prefixes

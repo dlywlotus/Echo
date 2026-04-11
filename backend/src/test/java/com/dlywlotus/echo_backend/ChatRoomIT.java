@@ -5,14 +5,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.lang.reflect.Type;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
-import com.dlywlotus.echo_backend.TestStomp.StompUtils;
-import com.dlywlotus.echo_backend.constants.RedisConstants;
-import com.dlywlotus.echo_backend.constants.StompConstants;
-import com.dlywlotus.echo_backend.dtos.ChatRoomEvent;
-import com.dlywlotus.echo_backend.dtos.SendMessageRequest;
-import com.dlywlotus.echo_backend.enums.RoomEventType;
-import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
@@ -27,6 +23,15 @@ import org.springframework.messaging.simp.stomp.StompFrameHandler;
 import org.springframework.messaging.simp.stomp.StompHeaders;
 import org.springframework.messaging.simp.stomp.StompSession;
 import org.springframework.messaging.simp.user.SimpUserRegistry;
+
+import com.dlywlotus.echo_backend.TestStomp.StompUtils;
+import com.dlywlotus.echo_backend.constants.RedisConstants;
+import com.dlywlotus.echo_backend.constants.StompConstants;
+import com.dlywlotus.echo_backend.dtos.ChatRoomEvent;
+import com.dlywlotus.echo_backend.dtos.SendMessageRequest;
+import com.dlywlotus.echo_backend.enums.RoomEventType;
+
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -50,12 +55,10 @@ class ChatRoomIT {
     }
 
     @Test
-    void givenInChatRoom_whenSendMessage_otherUserReceives() throws ExecutionException, InterruptedException, TimeoutException {
+    void givenInChatRoom_whenSendMessage_otherUserReceives() throws InterruptedException, TimeoutException, ExecutionException {
         // Simulate two users connecting to the websocket
-        String userOneId = UUID.randomUUID().toString();
-        String userTwoId = UUID.randomUUID().toString();
-        StompSession userOneSession = StompUtils.connect(serverPort, userOneId);
-        StompSession userTwoSession = StompUtils.connect(serverPort, userTwoId);
+        StompSession userOneSession = StompUtils.connect(serverPort, UUID.randomUUID().toString());
+        StompSession userTwoSession = StompUtils.connect(serverPort, UUID.randomUUID().toString());
 
         // Simulate two users joining a room (w/o using the lobby scheduler and join room methods)
         String roomId = UUID.randomUUID().toString();
@@ -96,11 +99,13 @@ class ChatRoomIT {
     void givenUserTwoLeft_AfterRoomCreated_userOneReceivesDisconnectEvent() throws ExecutionException, InterruptedException, TimeoutException {
         String userOneId = UUID.randomUUID().toString();
         StompSession userOneSession = StompUtils.connect(serverPort, userOneId);
-        String userOneKey = RedisConstants.SESSION_KEY_PREFIX + userOneSession.getSessionId();
 
-        // Simulate room creation
+        // Simulate room with only user one in it (w/o using the lobby scheduler and join room methods)
         String roomId = UUID.randomUUID().toString();
-        redisTemplate.opsForSet().add(RedisConstants.getRoomRedisKey(roomId), userOneKey);
+        simpUserRegistry.getUsers().forEach(user -> {
+            if (user.getPrincipal() == null) return;
+            redisTemplate.opsForSet().add(RedisConstants.getRoomRedisKey(roomId), user.getName());
+        });
 
         // Subscribe user one to the room's topic
         CompletableFuture<ChatRoomEvent> messageContentCompletableFuture = new CompletableFuture<>();

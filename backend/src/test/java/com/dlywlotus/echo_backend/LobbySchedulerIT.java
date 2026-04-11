@@ -1,5 +1,7 @@
 package com.dlywlotus.echo_backend;
 
+import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Type;
@@ -98,5 +100,12 @@ class LobbySchedulerIT {
         roomUserIds.add(roomResult.userOneId());
         roomUserIds.add(roomResult.userTwoId());
         assertTrue(roomUserIds.contains(userOneId) && roomUserIds.contains(userTwoId));
+
+        // Also make sure that any already processed user can still join the queue once more
+        userOneSession.send("/app/lobby/join", new JoinRoomRequest("Alice"));
+        // Polls the service until the condition is met
+        await().atMost(5, TimeUnit.SECONDS).untilAsserted(
+                () -> assertEquals(1, lobbyService.getQueueSize())
+        );
     }
 }
