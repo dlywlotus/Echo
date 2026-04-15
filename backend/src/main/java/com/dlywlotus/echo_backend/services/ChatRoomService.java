@@ -1,15 +1,13 @@
 package com.dlywlotus.echo_backend.services;
 
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.stereotype.Service;
-
 import com.dlywlotus.echo_backend.constants.RedisConstants;
 import com.dlywlotus.echo_backend.constants.StompConstants;
 import com.dlywlotus.echo_backend.dtos.ChatRoomEvent;
 import com.dlywlotus.echo_backend.enums.RoomEventType;
-
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
@@ -24,7 +22,7 @@ public class ChatRoomService {
         redisTemplate.opsForSet().remove(RedisConstants.getRoomRedisKey(roomId), redisKey);
 
         // Send "DISCONNECT" event to room topic
-        ChatRoomEvent roomEvent = new ChatRoomEvent(RoomEventType.DISCONNECT, null, null, null);
+        ChatRoomEvent roomEvent = new ChatRoomEvent(RoomEventType.DISCONNECT, null, null);
         sendRoomEvent(roomId, roomEvent);
 
     }
@@ -37,7 +35,7 @@ public class ChatRoomService {
         }
 
         // Send "DISCONNECT" event to room topic
-        ChatRoomEvent roomEvent = new ChatRoomEvent(RoomEventType.DISCONNECT, null, null, null);
+        ChatRoomEvent roomEvent = new ChatRoomEvent(RoomEventType.DISCONNECT, null, null);
         sendRoomEvent(roomId, roomEvent);
     }
 
@@ -46,7 +44,7 @@ public class ChatRoomService {
 
         //Send "MESSAGE" event to room topic
         String userId = getUserId(redisKey);
-        ChatRoomEvent roomEvent = new ChatRoomEvent(RoomEventType.MESSAGE, userId, content, null);
+        ChatRoomEvent roomEvent = new ChatRoomEvent(RoomEventType.MESSAGE, userId, content);
         sendRoomEvent(roomId, roomEvent);
     }
 
@@ -55,7 +53,7 @@ public class ChatRoomService {
 
         //Send "TYPING" event to room topic
         String userId = getUserId(redisKey);
-        ChatRoomEvent roomEvent = new ChatRoomEvent(RoomEventType.TYPING, userId, null, isTyping);
+        ChatRoomEvent roomEvent = new ChatRoomEvent(RoomEventType.TYPING, userId, String.valueOf(isTyping));
         sendRoomEvent(roomId, roomEvent);
     }
 

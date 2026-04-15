@@ -28,14 +28,20 @@ All real-time communication uses the STOMP protocol. The default application des
 ### Endpoints
 
 | Destination                   | Action                           | Request Payload      |
-| :---------------------------- | :------------------------------- | :------------------- |
+|:------------------------------|:---------------------------------|:---------------------|
 | `/app/lobby/join`             | Join the matchmaking queue       | `JoinRoomRequest`    |
 | `/app/room/{roomId}/leave`    | Exit an active chat room         | `N/A`                |
 | `/app/room/{roomId}/message`  | Send a text message              | `SendMessageRequest` |
 | `/app/room/{roomId}/typing`   | Broadcast typing status          | `SendTypingRequest`  |
 | `/app/room/{roomId}/validate` | Check if the room is still valid | `N/A`                |
 
----
+### Topics
+
+| Name                               | Usage                          | Message Format  |
+|:-----------------------------------|:-------------------------------|:----------------|
+| `/queue/user/{userId}/new-room`    | To get new room notifications  | `RoomDetails`   |
+| `/topic/global/stats/active-users` | To get the no. of active users | `int`           |
+| `/topic/room/{roomId}`             | To get chat room events        | `ChatRoomEvent` |
 
 ### Payload Schemas
 
@@ -63,9 +69,35 @@ All real-time communication uses the STOMP protocol. The default application des
 }
 ```
 
+### RoomDetails
+
+```
+{
+  "roomId": "",
+  "userOneId": "",
+  "userOneName": "",
+  "userTwoId": "",
+  "userTwoName": ""
+}
+```
+
+### ChatRoomEvent
+
+ChatRoomEvent(RoomEventType type, String userId, String content, Boolean isTyping, Instant timestamp)
+
+```
+{
+  "type": "",
+  "userId": "",
+  "content": "",
+  "timestamp": ""
+}
+```
+
 ## Front end implementation requirements set by backend
 
 - When the user establishes the web socket connection it has to send a generated uuid in the
   connection
   header as `"user-id" = <GENERATED_UUID>`
-- When the user receives the "new room" event it should query the `"app/room/{roomId}/validate"` end point to see if the room still has 2 participants
+- When the user receives the "new room" event it should query the `"app/room/{roomId}/validate"` end point to see if the
+  room still has 2 participants

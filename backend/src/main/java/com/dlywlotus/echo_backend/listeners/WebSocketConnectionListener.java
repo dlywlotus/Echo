@@ -1,8 +1,11 @@
 package com.dlywlotus.echo_backend.listeners;
 
-import java.util.Objects;
-import java.util.concurrent.TimeUnit;
-
+import com.dlywlotus.echo_backend.constants.RedisConstants;
+import com.dlywlotus.echo_backend.constants.StompConstants;
+import com.dlywlotus.echo_backend.dtos.ChatRoomEvent;
+import com.dlywlotus.echo_backend.enums.RoomEventType;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -12,13 +15,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.socket.messaging.SessionConnectEvent;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 
-import com.dlywlotus.echo_backend.constants.RedisConstants;
-import com.dlywlotus.echo_backend.constants.StompConstants;
-import com.dlywlotus.echo_backend.dtos.ChatRoomEvent;
-import com.dlywlotus.echo_backend.enums.RoomEventType;
-
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
@@ -61,7 +59,7 @@ public class WebSocketConnectionListener {
         if (!Objects.isNull(roomId)) {
             // Send "DISCONNECT" event to the room topic to notify the other user
             String userId = hashOperations.get(sessionKey, RedisConstants.USER_ID_HASH_KEY);
-            ChatRoomEvent roomEvent = new ChatRoomEvent(RoomEventType.DISCONNECT, userId, null, null);
+            ChatRoomEvent roomEvent = new ChatRoomEvent(RoomEventType.DISCONNECT, userId, null);
             stompTemplate.convertAndSend(StompConstants.ROOM_PREFIX + roomId, roomEvent);
 
             // Remove user session from room redis set

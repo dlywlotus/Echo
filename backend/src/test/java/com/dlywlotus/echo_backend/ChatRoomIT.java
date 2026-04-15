@@ -1,14 +1,12 @@
 package com.dlywlotus.echo_backend;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import java.lang.reflect.Type;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
+import com.dlywlotus.echo_backend.TestStomp.StompUtils;
+import com.dlywlotus.echo_backend.constants.RedisConstants;
+import com.dlywlotus.echo_backend.constants.StompConstants;
+import com.dlywlotus.echo_backend.dtos.ChatRoomEvent;
+import com.dlywlotus.echo_backend.dtos.SendMessageRequest;
+import com.dlywlotus.echo_backend.enums.RoomEventType;
+import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
@@ -24,14 +22,14 @@ import org.springframework.messaging.simp.stomp.StompHeaders;
 import org.springframework.messaging.simp.stomp.StompSession;
 import org.springframework.messaging.simp.user.SimpUserRegistry;
 
-import com.dlywlotus.echo_backend.TestStomp.StompUtils;
-import com.dlywlotus.echo_backend.constants.RedisConstants;
-import com.dlywlotus.echo_backend.constants.StompConstants;
-import com.dlywlotus.echo_backend.dtos.ChatRoomEvent;
-import com.dlywlotus.echo_backend.dtos.SendMessageRequest;
-import com.dlywlotus.echo_backend.enums.RoomEventType;
+import java.lang.reflect.Type;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
-import lombok.extern.slf4j.Slf4j;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -87,7 +85,7 @@ class ChatRoomIT {
         // Verify that user one receives user two's message
         String stompDestination = "/app/room/" + roomId + "/message";
         userTwoSession.send(stompDestination, new SendMessageRequest("Hello!"));
-        String receivedMessage = messageContentCompletableFuture.get(10, TimeUnit.SECONDS).content();
+        String receivedMessage = messageContentCompletableFuture.get(10, TimeUnit.SECONDS).getContent();
         assertEquals("Hello!", receivedMessage);
 
         // Clean up web socket connections
@@ -125,10 +123,10 @@ class ChatRoomIT {
 
         // Validate if room has two people
         String stompDestination = "/app/room/" + roomId + "/validate";
-        userOneSession.send(stompDestination, new ChatRoomEvent(null, null, null, null));
+        userOneSession.send(stompDestination, new ChatRoomEvent(null, null, null));
 
         // Verify that user one receives user two's DISCONNECT event
-        RoomEventType roomEventType = messageContentCompletableFuture.get(10, TimeUnit.SECONDS).type();
+        RoomEventType roomEventType = messageContentCompletableFuture.get(10, TimeUnit.SECONDS).getType();
         assertEquals(RoomEventType.DISCONNECT, roomEventType);
 
         // Clean up web socket connections
