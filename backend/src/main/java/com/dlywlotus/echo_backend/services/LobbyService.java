@@ -47,7 +47,12 @@ public class LobbyService {
 
         // Add user session ids to redis set
         redisTemplate.opsForSet().add(RedisConstants.getRoomRedisKey(roomId.toString()), userOneKey, userTwoKey);
-
+        
+        // Add room id to each user's redis hash
+        HashOperations<String, String, String> hashOperations = redisTemplate.opsForHash();
+        hashOperations.put(userOneKey, RedisConstants.ROOM_ID_HASH_KEY, roomId.toString());
+        hashOperations.put(userTwoKey, RedisConstants.ROOM_ID_HASH_KEY, roomId.toString());
+        
         // Send message to both users
         RoomDetails chatRoom = new RoomDetails(roomId,
                 userOneId, hashOps.get(userOneKey, RedisConstants.USER_NAME_HASH_KEY),

@@ -28,7 +28,7 @@ All real-time communication uses the STOMP protocol. The default application des
 ### Endpoints
 
 | Destination                   | Action                           | Request Payload      |
-|:------------------------------|:---------------------------------|:---------------------|
+| :---------------------------- | :------------------------------- | :------------------- |
 | `/app/lobby/join`             | Join the matchmaking queue       | `JoinRoomRequest`    |
 | `/app/room/{roomId}/leave`    | Exit an active chat room         | `N/A`                |
 | `/app/room/{roomId}/message`  | Send a text message              | `SendMessageRequest` |
@@ -68,6 +68,4 @@ All real-time communication uses the STOMP protocol. The default application des
 - When the user establishes the web socket connection it has to send a generated uuid in the
   connection
   header as `"user-id" = <GENERATED_UUID>`
-- When the user receives the "new room" event it should query the `"/room/{roomId}/validate"` web
-  socket
-  route to see if the room still has 2 participants
+- When the user receives the "new room" event it should query the `"app/room/{roomId}/validate"` end point to see if the room still has 2 participants
