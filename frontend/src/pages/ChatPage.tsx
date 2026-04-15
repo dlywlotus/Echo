@@ -35,8 +35,8 @@ const ChatPage = ({ setPage, socketClient, roomDetails, currentUserId }: props) 
   const [messages, setMessages] = useState<ChatEvent[]>([]);
 
   const onSendMessage = (e: React.SubmitEvent) => {
-    if (!socketClient.connected || !roomDetails?.roomId || input == "") return;
     e.preventDefault();
+    if (!socketClient.connected || !roomDetails?.roomId || input == "") return;
     setInput("");
 
     socketClient.publish({
