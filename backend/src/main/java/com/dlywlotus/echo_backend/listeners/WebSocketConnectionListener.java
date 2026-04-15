@@ -58,8 +58,7 @@ public class WebSocketConnectionListener {
         String roomId = hashOperations.get(sessionKey, RedisConstants.ROOM_ID_HASH_KEY);
         if (!Objects.isNull(roomId)) {
             // Send "DISCONNECT" event to the room topic to notify the other user
-            String userId = hashOperations.get(sessionKey, RedisConstants.USER_ID_HASH_KEY);
-            ChatRoomEvent roomEvent = new ChatRoomEvent(RoomEventType.DISCONNECT, userId, null);
+            ChatRoomEvent roomEvent = new ChatRoomEvent(RoomEventType.DISCONNECT, null, null);
             stompTemplate.convertAndSend(StompConstants.ROOM_PREFIX + roomId, roomEvent);
 
             // Remove user session from room redis set

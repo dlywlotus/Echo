@@ -20,9 +20,9 @@ public class ChatRoomService {
 
         // Remove user session from redis set
         redisTemplate.opsForSet().remove(RedisConstants.getRoomRedisKey(roomId), redisKey);
-
+    
         // Send "DISCONNECT" event to room topic
-        ChatRoomEvent roomEvent = new ChatRoomEvent(RoomEventType.DISCONNECT, null, null);
+        ChatRoomEvent roomEvent = new ChatRoomEvent(RoomEventType.DISCONNECT,null, null);
         sendRoomEvent(roomId, roomEvent);
 
     }

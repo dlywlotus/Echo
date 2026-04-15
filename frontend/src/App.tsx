@@ -5,72 +5,66 @@ import LobbyPage from "./pages/LobbyPage";
 import ChatPage, { type RoomDetails } from "./pages/ChatPage";
 import { v4 as uuidv4 } from "uuid";
 import { Spinner } from "./components/ui/spinner";
-import { Toaster } from "sonner";
-import { useTheme } from "./components/theme-provider";
 
 const userId = uuidv4();
 
 const App = () => {
-    const [page, setPage] = useState<"home" | "lobby" | "chat">("chat");
-    const [activeUserCount, setActiveUserCount] = useState<number>(0);
-    const [socketClient, setSocketClient] = useState<Client | null>(null);
-    const [roomDetails, setRoomDetails] = useState<RoomDetails | null>(null);
-    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-    const { theme } = useTheme();
+  const [page, setPage] = useState<"home" | "lobby" | "chat">("home");
+  const [activeUserCount, setActiveUserCount] = useState<number>(0);
+  const [socketClient, setSocketClient] = useState<Client | null>(null);
+  const [roomDetails, setRoomDetails] = useState<RoomDetails | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-    useEffect(() => {
-        setCurrentUserId(userId);
+  useEffect(() => {
+    setCurrentUserId(userId);
 
-        const client = new Client({
-            brokerURL: "ws://localhost:8080/web-socket",
-            connectHeaders: {
-                "user-id": userId,
-            },
-            onConnect: () => {
-                client.subscribe(`/queue/user/${userId}/new-room`, (message) => {
-                    const newRoomDetails: RoomDetails = JSON.parse(message.body);
-                    setRoomDetails(newRoomDetails);
-                    setPage("chat");
-                });
-                client.subscribe(`/topic/global/stats/active-users`, (message) => {
-                    setActiveUserCount(parseInt(message.body));
-                });
-                setSocketClient(client);
-            },
+    const client = new Client({
+      brokerURL: "ws://localhost:8080/web-socket",
+      connectHeaders: {
+        "user-id": userId,
+      },
+      onConnect: () => {
+        client.subscribe(`/queue/user/${userId}/new-room`, (message) => {
+          const newRoomDetails: RoomDetails = JSON.parse(message.body);
+          setRoomDetails(newRoomDetails);
+          setPage("chat");
         });
+        client.subscribe(`/topic/global/stats/active-users`, (message) => {
+          setActiveUserCount(parseInt(message.body));
+        });
+        setSocketClient(client);
+      },
+    });
 
-        client.activate();
+    client.activate();
 
-        return () => {
-            client.deactivate();
-        };
-    }, []);
+    return () => {
+      client.deactivate();
+    };
+  }, []);
 
-    if (!socketClient || !currentUserId)
-        return (
-            <div className="flex h-svh flex-col items-center justify-center">
-                <Spinner className="text-primary" />
-            </div>
-        );
-
+  if (!socketClient || !currentUserId)
     return (
-        <>
-            <div className="flex h-svh flex-col items-center justify-center">
-                {page == "home" && (
-                    <HomePage setPage={setPage} socketClient={socketClient} activeUserCount={activeUserCount} />
-                )}
-                {page == "lobby" && <LobbyPage setPage={setPage} activeUserCount={activeUserCount} />}
-                {page == "chat" && (
-                    <ChatPage
-                        setPage={setPage}
-                        socketClient={socketClient}
-                        roomDetails={roomDetails}
-                        currentUserId={currentUserId}
-                    />
-                )}
-            </div>
-            <Toaster theme={"dark"} />
-        </>
+      <div className="flex h-svh flex-col items-center justify-center">
+        <Spinner className="text-primary" />
+      </div>
     );
+
+  return (
+    <>
+      <div className="flex h-svh flex-col items-center justify-center">
+        {page == "home" && <HomePage setPage={setPage} socketClient={socketClient} activeUserCount={activeUserCount} />}
+        {page == "lobby" && <LobbyPage setPage={setPage} activeUserCount={activeUserCount} />}
+        {page == "chat" && (
+          <ChatPage
+            setPage={setPage}
+            socketClient={socketClient}
+            roomDetails={roomDetails}
+            currentUserId={currentUserId}
+          />
+        )}
+      </div>
+    </>
+  );
 };
 export default App;
