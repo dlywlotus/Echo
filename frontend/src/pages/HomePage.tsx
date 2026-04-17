@@ -15,6 +15,11 @@ type props = {
 const HomePage = ({ setPage, socketClient, activeUserCount }: props) => {
   const [username, setUsername] = useState<string>();
 
+  const onInputChange = (e: React.ChangeEvent<HTMLInputElement, HTMLInputElement>) => {
+    if (e.target.value.length > 25) return;
+    setUsername(e.target.value);
+  };
+
   const onJoinLobby = (e: React.SubmitEvent) => {
     e.preventDefault();
     if (!socketClient || !username) return;
@@ -35,7 +40,7 @@ const HomePage = ({ setPage, socketClient, activeUserCount }: props) => {
         <span className="text-primary">Echo,</span> annonymous real time chats
       </div>
       <form onSubmit={onJoinLobby} className="p-4">
-        <Input placeholder="e.g. dlywlotus" onChange={(e) => setUsername(e.target.value)} />
+        <Input placeholder="Enter your display name" className="text-sm" onChange={onInputChange} value={username} />
         <Button className="mt-4 w-full" size={"lg"}>
           Start chatting
         </Button>

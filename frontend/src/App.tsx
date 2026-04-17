@@ -45,7 +45,7 @@ const App = () => {
 
   if (!socketClient || !currentUserId)
     return (
-      <div className="flex h-full w-full flex-col items-center justify-center">
+      <div className="flex h-svh w-full flex-col items-center justify-center">
         <Spinner className="text-primary" />
       </div>
     );

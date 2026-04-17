@@ -14,7 +14,7 @@ export function ChatBubble({ chatEvent, currentUserId, roomDetails }: props) {
   if (chatEvent.type == "DISCONNECT") {
     return (
       <div className="mb-4 flex w-full justify-center">
-        <Badge>
+        <Badge variant={"outline"} className="p-4">
           {chatEvent.userId == roomDetails.userOneId ? roomDetails.userOneName : roomDetails.userTwoName} has left
         </Badge>
       </div>

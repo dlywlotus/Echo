@@ -5,12 +5,15 @@ import com.dlywlotus.echo_backend.constants.StompConstants;
 import com.dlywlotus.echo_backend.dtos.ChatRoomEvent;
 import com.dlywlotus.echo_backend.enums.RoomEventType;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ChatRoomService {
     private final SimpMessagingTemplate stompTemplate;
     private final RedisTemplate<String, String> redisTemplate;
