@@ -13,7 +13,7 @@ type props = {
 };
 
 const HomePage = ({ setPage, socketClient, activeUserCount }: props) => {
-  const [username, setUsername] = useState<string>();
+  const [username, setUsername] = useState<string>("");
 
   const onInputChange = (e: React.ChangeEvent<HTMLInputElement, HTMLInputElement>) => {
     if (e.target.value.length > 25) return;

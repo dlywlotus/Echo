@@ -17,9 +17,10 @@ const App = () => {
 
   useEffect(() => {
     setCurrentUserId(userId);
+    const webSocketServerUrl = import.meta.env.VITE_WEB_SOCKET_SERVER_URL ?? "ws://localhost:8080/web-socket"
 
     const client = new Client({
-      brokerURL: "ws://localhost:8080/web-socket",
+      brokerURL: webSocketServerUrl,
       connectHeaders: {
         "user-id": userId,
       },

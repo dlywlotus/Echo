@@ -7,11 +7,20 @@ Connect with other users and chat anonymously
 - Front End: NextJs, Tailwind, ShadCn
 - Back End: Spring Boot, Redis, StompJs
 
+## Local Front end development
+
+- Navigate to /frontend folder
+- Run `npm i`, followed by `npm run dev`
+
 ## Local backend development
 
-- First cd into the backend folder then,
-- Start containers: `docker compose up -d`
-- Stop containers: `docker compose down -v`
+- Navigate to /backend folder
+- Run `docker compose up -d`
+- Create a run configuration for the app entry point with the following env variable: `spring.profiles.active=local`
+
+## Deployment
+
+- Set up environment variables according to the `.env.example` files located in both `/frontend` and `/backend` folders.
 
 ## Integration tests
 
@@ -29,7 +38,7 @@ All real-time communication uses the STOMP protocol. The default application des
 ### Endpoints
 
 | Destination                   | Action                           | Request Payload      |
-|:------------------------------|:---------------------------------|:---------------------|
+| :---------------------------- | :------------------------------- | :------------------- |
 | `/app/lobby/join`             | Join the matchmaking queue       | `JoinRoomRequest`    |
 | `/app/room/{roomId}/leave`    | Exit an active chat room         | `N/A`                |
 | `/app/room/{roomId}/message`  | Send a text message              | `SendMessageRequest` |
@@ -39,7 +48,7 @@ All real-time communication uses the STOMP protocol. The default application des
 ### Topics
 
 | Name                               | Usage                          | Message Format  |
-|:-----------------------------------|:-------------------------------|:----------------|
+| :--------------------------------- | :----------------------------- | :-------------- |
 | `/queue/user/{userId}/new-room`    | To get new room notifications  | `RoomDetails`   |
 | `/topic/global/stats/active-users` | To get the no. of active users | `int`           |
 | `/topic/room/{roomId}`             | To get chat room events        | `ChatRoomEvent` |
