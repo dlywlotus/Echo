@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 public class LobbyScheduler {
     public final LobbyService lobbyService;
 
-    @Scheduled(fixedRate = 1000)
+    @Scheduled(fixedRate = 500)
     public void processLobbyQueue() {
         lobbyService.processQueue();
     }

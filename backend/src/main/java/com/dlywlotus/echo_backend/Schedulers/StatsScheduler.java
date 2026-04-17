@@ -12,7 +12,7 @@ import lombok.RequiredArgsConstructor;
 public class StatsScheduler {
     private final StatsService statsService;
 
-    @Scheduled(fixedRate = 2000)
+    @Scheduled(fixedRate = 1000)
     public void broadcastActiveUserCount() {
         statsService.broadcastActiveUserCount();
     }

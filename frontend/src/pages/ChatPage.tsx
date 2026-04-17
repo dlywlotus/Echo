@@ -37,14 +37,9 @@ const ChatPage = ({ setPage, socketClient, roomDetails, currentUserId }: props) 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [typingUsers, setTypingUsers] = useState<Set<String>>(new Set());
 
-  // TODO
-  // then max sure names are capped so they dont hit the button the right.
-  // Test for race conditions (i.e One use subscribing to the room before the other)
-  // Improve scheduler logic and use some library to test how many users the app can handle concurrently
-
   const onInputChange = (e: React.ChangeEvent<HTMLInputElement, HTMLInputElement>) => {
-    setInput(e.target.value);
     const inputLength = e.target.value.length;
+    setInput(e.target.value);
     if (!socketClient.connected || !roomDetails?.roomId || inputLength > 1) return;
 
     // len == 2: send start typing event, len == 2: send stop typing event
@@ -100,7 +95,7 @@ const ChatPage = ({ setPage, socketClient, roomDetails, currentUserId }: props) 
   // Scroll to the bottom of the scroll container when a new message is appended
   useEffect(() => {
     if (bottomOfChatRef?.current) bottomOfChatRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [messages, typingUsers]);
+  }, [messages]);
 
   // Subscribe to room events
   useEffect(() => {
@@ -159,7 +154,8 @@ const ChatPage = ({ setPage, socketClient, roomDetails, currentUserId }: props) 
             </Button>
           </CardAction>
         </CardHeader>
-        <ScrollArea className="min-h-0 flex-1 p-4" ref={scrollContainerRef}>
+        {/* Note: The bottom padding is hard coded to fit the loading dots exactly */}
+        <ScrollArea className="relative min-h-0 flex-1 px-4 pt-4 pb-11" ref={scrollContainerRef}>
           {messages.map((chatEvent) => (
             <ChatBubble
               key={`${chatEvent.timestamp}:${chatEvent.userId}`}
@@ -168,11 +164,14 @@ const ChatPage = ({ setPage, socketClient, roomDetails, currentUserId }: props) 
               roomDetails={roomDetails}
             />
           ))}
-          <span
-            className={cn("loading loading-lg bg-primary loading-dots", !isTyping() ? "opacity-0" : "opacity-100")}
-          ></span>
           <div ref={bottomOfChatRef}></div>
+          <div className="absolute bottom-0 left-0 p-4">
+            <span
+              className={cn("loading loading-lg bg-primary loading-dots", !isTyping() ? "opacity-0" : "opacity-100")}
+            ></span>
+          </div>
         </ScrollArea>
+
         <CardFooter className="border-t">
           <form className="flex w-full flex-row gap-4" onSubmit={onSendMessage}>
             <Input type="text" placeholder="Type something" className="flex-1" onChange={onInputChange} value={input} />
