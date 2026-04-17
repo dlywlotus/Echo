@@ -45,14 +45,14 @@ const App = () => {
 
   if (!socketClient || !currentUserId)
     return (
-      <div className="flex h-svh flex-col items-center justify-center">
+      <div className="flex h-full w-full flex-col items-center justify-center">
         <Spinner className="text-primary" />
       </div>
     );
 
   return (
     <>
-      <div className="flex h-svh flex-col items-center justify-center">
+      <div className="h-svh">
         {page == "home" && <HomePage setPage={setPage} socketClient={socketClient} activeUserCount={activeUserCount} />}
         {page == "lobby" && <LobbyPage setPage={setPage} activeUserCount={activeUserCount} />}
         {page == "chat" && (

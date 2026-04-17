@@ -1,12 +1,12 @@
 import { ChatBubble } from "@/components/ChatBubble";
-import PageCard from "@/components/PageCard";
 import { Button } from "@/components/ui/button";
-import { CardAction, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardAction, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { ItemSeparator } from "@/components/ui/item";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Spinner } from "@/components/ui/spinner";
 import type { Client } from "@stomp/stompjs";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type props = {
   setPage: React.Dispatch<React.SetStateAction<"home" | "lobby" | "chat">>;
@@ -33,6 +33,7 @@ export type RoomDetails = {
 const ChatPage = ({ setPage, socketClient, roomDetails, currentUserId }: props) => {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<ChatEvent[]>([]);
+  const bottomOfChatRef = useRef<HTMLDivElement>(null);
 
   const onSendMessage = (e: React.SubmitEvent) => {
     e.preventDefault();
@@ -54,12 +55,16 @@ const ChatPage = ({ setPage, socketClient, roomDetails, currentUserId }: props) 
     setPage("home");
   };
 
+  // Scroll to the bottom of the scroll container when a new message is appended
+  useEffect(() => {
+    if (bottomOfChatRef?.current) bottomOfChatRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [messages]);
+
   useEffect(() => {
     if (!socketClient?.connected || !roomDetails?.roomId) return;
 
     const roomSubscription = socketClient.subscribe(`/topic/room/${roomDetails?.roomId}`, (message) => {
       const event: ChatEvent = JSON.parse(message.body);
-      console.log("received event!", event);
       if (event.type == "MESSAGE") {
         setMessages((messages) => [...messages, event]);
       } else if (event.type == "DISCONNECT") {
@@ -81,47 +86,55 @@ const ChatPage = ({ setPage, socketClient, roomDetails, currentUserId }: props) 
   }, [socketClient, roomDetails?.roomId]);
 
   if (!roomDetails) {
-    return <Spinner />;
+    return (
+      <div className="flex h-full w-full flex-col items-center justify-center">
+        <Spinner className="text-primary" />
+      </div>
+    );
   }
 
   return (
-    <PageCard>
-      <CardHeader>
-        <CardTitle>
-          Chatting with:{" "}
-          <span className="text-primary">
+    <div className="flex h-full items-center justify-center lg:p-4">
+      <Card className="h-full w-full bg-background py-0 lg:max-h-150 lg:w-100">
+        <CardHeader className="border-b py-4">
+          <CardTitle>
+            Chatting with{" "}
             {roomDetails?.userOneId == currentUserId ? roomDetails?.userTwoName : roomDetails?.userOneName}
-          </span>
-        </CardTitle>
-        <CardAction>
-          <Button size={"sm"} onClick={onLeaveRoom}>
-            Leave
-          </Button>
-        </CardAction>
-      </CardHeader>
-      <ScrollArea className="flex-1">
-        {messages.map((chatEvent) => (
-          <ChatBubble
-            key={`${chatEvent.timestamp}:${chatEvent.userId}`}
-            chatEvent={chatEvent}
-            currentUserId={currentUserId}
-            roomDetails={roomDetails}
-          />
-        ))}
-      </ScrollArea>
-      <CardFooter>
-        <form className="flex w-full flex-row gap-4" onSubmit={onSendMessage}>
-          <Input
-            type="text"
-            placeholder="Type something"
-            className="flex-1"
-            onChange={(e) => setInput(e.target.value)}
-            value={input}
-          />
-          <Button>Send</Button>
-        </form>
-      </CardFooter>
-    </PageCard>
+          </CardTitle>
+          <CardDescription>
+            You are {roomDetails?.userOneId == currentUserId ? roomDetails?.userOneName : roomDetails?.userTwoName}
+          </CardDescription>
+          <CardAction>
+            <Button size={"sm"} onClick={onLeaveRoom}>
+              Leave
+            </Button>
+          </CardAction>
+        </CardHeader>
+        <ScrollArea className="min-h-0 flex-1 px-4">
+          {messages.map((chatEvent) => (
+            <ChatBubble
+              key={`${chatEvent.timestamp}:${chatEvent.userId}`}
+              chatEvent={chatEvent}
+              currentUserId={currentUserId}
+              roomDetails={roomDetails}
+            />
+          ))}
+          <div ref={bottomOfChatRef}></div>
+        </ScrollArea>
+        <CardFooter className="border-t py-4">
+          <form className="flex w-full flex-row gap-4" onSubmit={onSendMessage}>
+            <Input
+              type="text"
+              placeholder="Type something"
+              className="flex-1"
+              onChange={(e) => setInput(e.target.value)}
+              value={input}
+            />
+            <Button>Send</Button>
+          </form>
+        </CardFooter>
+      </Card>
+    </div>
   );
 };
 

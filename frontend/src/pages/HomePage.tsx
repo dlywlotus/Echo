@@ -2,8 +2,7 @@ import { Input } from "@/components/ui/input";
 import { BotMessageSquare } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import PageCard from "@/components/PageCard";
+import { Card } from "@/components/ui/card";
 import type { Client } from "@stomp/stompjs";
 import { useState } from "react";
 
@@ -28,31 +27,24 @@ const HomePage = ({ setPage, socketClient, activeUserCount }: props) => {
   };
 
   return (
-    <PageCard>
-      <CardContent className="flex h-full flex-col items-center justify-center gap-4">
-        <Card className="p-6">
-          <BotMessageSquare className="h-12 w-12 text-primary" strokeWidth={1.5} />
-        </Card>
-        <div className="text-base">
-          <span className="text-primary">Echo,</span> annonymous real time chats
-        </div>
-        <form onSubmit={onJoinLobby}>
-          <div className="w-full">
-            <label className="self-start">Display Name</label>
-            <Input className="mt-2" placeholder="e.g. dlywlotus" onChange={(e) => setUsername(e.target.value)} />
-          </div>
-          <Button className="mt-4 w-full" size={"lg"}>
-            Start chatting
-          </Button>
-        </form>
-      </CardContent>
-      <CardFooter>
-        <div>
-          <span className="text-primary">{activeUserCount} </span>
-          users online
-        </div>
-      </CardFooter>
-    </PageCard>
+    <div className="relative flex h-full flex-col items-center justify-center gap-4">
+      <Card className="p-4">
+        <BotMessageSquare className="h-10 w-10 text-primary" strokeWidth={1.5} />
+      </Card>
+      <div>
+        <span className="text-primary">Echo,</span> annonymous real time chats
+      </div>
+      <form onSubmit={onJoinLobby} className="p-4">
+        <Input placeholder="e.g. dlywlotus" onChange={(e) => setUsername(e.target.value)} />
+        <Button className="mt-4 w-full" size={"lg"}>
+          Start chatting
+        </Button>
+      </form>
+      <div className="absolute bottom-0 left-0 p-4">
+        <span className="text-primary">{activeUserCount} </span>
+        users online
+      </div>
+    </div>
   );
 };
 

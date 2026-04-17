@@ -22,17 +22,17 @@ export function ChatBubble({ chatEvent, currentUserId, roomDetails }: props) {
   }
 
   return (
-    <div className={cn("mb-4 flex w-full px-4", chatEvent.userId == currentUserId ? "justify-end" : "justify-start")}>
+    <div className={cn("mb-4 flex w-full", chatEvent.userId == currentUserId ? "justify-end" : "justify-start")}>
       <div
         className={cn(
-          "relative max-w-[75%] px-4 py-2 text-sm shadow-sm",
+          "relative max-w-[75%] px-4 py-2",
           chatEvent.userId == currentUserId
-            ? "rounded-l-2xl rounded-tr-2xl rounded-br-none border border-border"
-            : "rounded-tl-2xl rounded-r-2xl rounded-bl-none border border-primary"
+            ? "border-borders rounded-l-2xl rounded-tr-2xl rounded-br-none border dark:bg-input/30"
+            : "rounded-tl-2xl rounded-r-2xl rounded-bl-none border border-primary bg-primary text-primary-foreground"
         )}
       >
         <p className="leading-relaxed wrap-break-word">{chatEvent.content}</p>
-        <div className="mt-1 text-right text-xs">
+        <div className="text-right text-xs">
           {timestamp.getHours()}:{timestamp.getMinutes()}
         </div>
       </div>
