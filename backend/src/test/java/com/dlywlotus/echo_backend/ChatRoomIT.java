@@ -1,12 +1,14 @@
 package com.dlywlotus.echo_backend;
 
-import com.dlywlotus.echo_backend.TestStomp.StompUtils;
-import com.dlywlotus.echo_backend.constants.RedisConstants;
-import com.dlywlotus.echo_backend.constants.StompConstants;
-import com.dlywlotus.echo_backend.dtos.ChatRoomEvent;
-import com.dlywlotus.echo_backend.dtos.SendMessageRequest;
-import com.dlywlotus.echo_backend.enums.RoomEventType;
-import lombok.extern.slf4j.Slf4j;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.lang.reflect.Type;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
@@ -21,18 +23,20 @@ import org.springframework.messaging.simp.stomp.StompFrameHandler;
 import org.springframework.messaging.simp.stomp.StompHeaders;
 import org.springframework.messaging.simp.stomp.StompSession;
 import org.springframework.messaging.simp.user.SimpUserRegistry;
+import org.springframework.test.context.ActiveProfiles;
 
-import java.lang.reflect.Type;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import com.dlywlotus.echo_backend.TestStomp.StompUtils;
+import com.dlywlotus.echo_backend.constants.RedisConstants;
+import com.dlywlotus.echo_backend.constants.StompConstants;
+import com.dlywlotus.echo_backend.dtos.ChatRoomEvent;
+import com.dlywlotus.echo_backend.dtos.SendMessageRequest;
+import com.dlywlotus.echo_backend.enums.RoomEventType;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@ActiveProfiles("local")
 class ChatRoomIT {
     @LocalServerPort
     private int serverPort;

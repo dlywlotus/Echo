@@ -26,6 +26,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.messaging.simp.stomp.StompFrameHandler;
 import org.springframework.messaging.simp.stomp.StompHeaders;
 import org.springframework.messaging.simp.stomp.StompSession;
+import org.springframework.test.context.ActiveProfiles;
 
 import com.dlywlotus.echo_backend.TestStomp.StompUtils;
 import com.dlywlotus.echo_backend.constants.StompConstants;
@@ -37,6 +38,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@ActiveProfiles("local")
 class LobbyIT {
     @LocalServerPort
     private int serverPort;

@@ -7,8 +7,9 @@ Connect with other users and chat anonymously
 - Front End: NextJs, Tailwind, ShadCn
 - Back End: Spring Boot, Redis, StompJs
 
-## Local development
+## Local backend development
 
+- First cd into the backend folder then,
 - Start containers: `docker compose up -d`
 - Stop containers: `docker compose down -v`
 
@@ -83,7 +84,8 @@ All real-time communication uses the STOMP protocol. The default application des
 
 ### ChatRoomEvent
 
-ChatRoomEvent(RoomEventType type, String userId, String content, Boolean isTyping, Instant timestamp)
+ChatRoomEvent(RoomEventType type, String userId, String content, Boolean isTyping, Instant
+timestamp)
 
 ```
 {
@@ -99,5 +101,6 @@ ChatRoomEvent(RoomEventType type, String userId, String content, Boolean isTypin
 - When the user establishes the web socket connection it has to send a generated uuid in the
   connection
   header as `"user-id" = <GENERATED_UUID>`
-- When the user receives the "new room" event it should query the `"app/room/{roomId}/validate"` end point to see if the
+- When the user receives the "new room" event it should query the `"app/room/{roomId}/validate"` end
+  point to see if the
   room still has 2 participants
