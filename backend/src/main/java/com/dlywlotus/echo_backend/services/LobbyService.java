@@ -22,44 +22,44 @@ public class LobbyService {
     private final SimpMessagingTemplate stompTemplate;
 
     public void processQueue() {
-        if (getQueueSize() < 2) return;
-        log.info(">>>>>>>>>>>>>>>>>>>> PROCESSING QUEUE");
+        while (getQueueSize() >= 2) {
+            log.info(">>>>>>>>>>>>>>>>>>>> PROCESSING QUEUE");
+            String userOneKey = popFromQueue();
+            String userTwoKey = popFromQueue();
+            HashOperations<String, String, String> hashOps = redisTemplate.opsForHash();
 
-        String userOneKey = popFromQueue();
-        String userTwoKey = popFromQueue();
-        HashOperations<String, String, String> hashOps = redisTemplate.opsForHash();
+            // If the user B disconnected, add user A back to the front of the queue
+            if (!redisTemplate.hasKey(userOneKey) && !redisTemplate.hasKey(userTwoKey)) {
+                return;
+            } else if (!redisTemplate.hasKey(userOneKey)) {
+                String userTwoName = hashOps.get(userTwoKey, RedisConstants.USER_NAME_HASH_KEY);
+                joinQueue(userTwoKey, userTwoName);
+                return;
+            } else if (!redisTemplate.hasKey(userTwoKey)) {
+                String userOneName = hashOps.get(userOneKey, RedisConstants.USER_NAME_HASH_KEY);
+                joinQueue(userOneKey, userOneName);
+                return;
+            }
+            String userOneId = hashOps.get(userOneKey, RedisConstants.USER_ID_HASH_KEY);
+            String userTwoId = hashOps.get(userTwoKey, RedisConstants.USER_ID_HASH_KEY);
+            UUID roomId = UUID.randomUUID();
 
-        // If the user B disconnected, add user A back to the front of the queue
-        if (!redisTemplate.hasKey(userOneKey) && !redisTemplate.hasKey(userTwoKey)) {
-            return;
-        } else if (!redisTemplate.hasKey(userOneKey)) {
-            String userTwoName = hashOps.get(userTwoKey, RedisConstants.USER_NAME_HASH_KEY);
-            joinQueue(userTwoKey, userTwoName);
-            return;
-        } else if (!redisTemplate.hasKey(userTwoKey)) {
-            String userOneName = hashOps.get(userOneKey, RedisConstants.USER_NAME_HASH_KEY);
-            joinQueue(userOneKey, userOneName);
-            return;
+            // Add user session ids to redis set
+            redisTemplate.opsForSet().add(RedisConstants.getRoomRedisKey(roomId.toString()), userOneKey, userTwoKey);
+            
+            // Add room id to each user's redis hash
+            HashOperations<String, String, String> hashOperations = redisTemplate.opsForHash();
+            hashOperations.put(userOneKey, RedisConstants.ROOM_ID_HASH_KEY, roomId.toString());
+            hashOperations.put(userTwoKey, RedisConstants.ROOM_ID_HASH_KEY, roomId.toString());
+            
+            // Send message to both users
+            RoomDetails chatRoom = new RoomDetails(roomId,
+                    userOneId, hashOps.get(userOneKey, RedisConstants.USER_NAME_HASH_KEY),
+                    userTwoId, hashOps.get(userTwoKey, RedisConstants.USER_NAME_HASH_KEY)
+            );
+            stompTemplate.convertAndSend(StompConstants.getUserNewRoomTopic(userOneId), chatRoom);
+            stompTemplate.convertAndSend(StompConstants.getUserNewRoomTopic(userTwoId), chatRoom);
         }
-        String userOneId = hashOps.get(userOneKey, RedisConstants.USER_ID_HASH_KEY);
-        String userTwoId = hashOps.get(userTwoKey, RedisConstants.USER_ID_HASH_KEY);
-        UUID roomId = UUID.randomUUID();
-
-        // Add user session ids to redis set
-        redisTemplate.opsForSet().add(RedisConstants.getRoomRedisKey(roomId.toString()), userOneKey, userTwoKey);
-        
-        // Add room id to each user's redis hash
-        HashOperations<String, String, String> hashOperations = redisTemplate.opsForHash();
-        hashOperations.put(userOneKey, RedisConstants.ROOM_ID_HASH_KEY, roomId.toString());
-        hashOperations.put(userTwoKey, RedisConstants.ROOM_ID_HASH_KEY, roomId.toString());
-        
-        // Send message to both users
-        RoomDetails chatRoom = new RoomDetails(roomId,
-                userOneId, hashOps.get(userOneKey, RedisConstants.USER_NAME_HASH_KEY),
-                userTwoId, hashOps.get(userTwoKey, RedisConstants.USER_NAME_HASH_KEY)
-        );
-        stompTemplate.convertAndSend(StompConstants.getUserNewRoomTopic(userOneId), chatRoom);
-        stompTemplate.convertAndSend(StompConstants.getUserNewRoomTopic(userTwoId), chatRoom);
     }
 
     public void joinQueue(String redisKey, String username) {
