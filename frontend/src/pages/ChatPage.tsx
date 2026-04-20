@@ -4,7 +4,6 @@ import { Card, CardAction, CardDescription, CardFooter, CardHeader, CardTitle } 
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Spinner } from "@/components/ui/spinner";
-import { cn } from "@/lib/utils";
 import type { Client } from "@stomp/stompjs";
 import { useEffect, useRef, useState } from "react";
 
@@ -142,12 +141,9 @@ const ChatPage = ({ setPage, socketClient, roomDetails, currentUserId }: props) 
       <Card className="h-full w-full gap-0 bg-background lg:max-h-150 lg:w-100">
         <CardHeader className="border-b">
           <CardTitle>
-            Chatting with{" "}
             {roomDetails?.userOneId == currentUserId ? roomDetails?.userTwoName : roomDetails?.userOneName}
           </CardTitle>
-          <CardDescription>
-            You are {roomDetails?.userOneId == currentUserId ? roomDetails?.userOneName : roomDetails?.userTwoName}
-          </CardDescription>
+          {isTyping() && <CardDescription>typing...</CardDescription>}
           <CardAction>
             <Button size={"sm"} onClick={onLeaveRoom}>
               Leave
@@ -165,11 +161,6 @@ const ChatPage = ({ setPage, socketClient, roomDetails, currentUserId }: props) 
             />
           ))}
           <div ref={bottomOfChatRef}></div>
-          <div className="absolute bottom-0 left-0 p-4">
-            <span
-              className={cn("loading loading-lg bg-primary loading-dots", !isTyping() ? "opacity-0" : "opacity-100")}
-            ></span>
-          </div>
         </ScrollArea>
 
         <CardFooter className="border-t">
