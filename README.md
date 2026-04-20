@@ -4,8 +4,8 @@ Connect with other users and chat anonymously
 
 ## Tech Stack
 
-- Front End: NextJs, Tailwind, ShadCn
-- Back End: Spring Boot, Redis, StompJs
+- Front End: React, TailwindCss, StompJs
+- Back End: Spring Boot, Redis
 
 ## Local Front end development
 

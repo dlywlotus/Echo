@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { Client } from "@stomp/stompjs";
 import { useState } from "react";
+import { Switch } from "@/components/ui/switch";
+import { useTheme } from "@/components/theme-provider";
 
 type props = {
   setPage: React.Dispatch<React.SetStateAction<"home" | "lobby" | "chat">>;
@@ -14,6 +16,7 @@ type props = {
 
 const HomePage = ({ setPage, socketClient, activeUserCount }: props) => {
   const [username, setUsername] = useState<string>("");
+  const { theme, setTheme } = useTheme();
 
   const onInputChange = (e: React.ChangeEvent<HTMLInputElement, HTMLInputElement>) => {
     if (e.target.value.length > 25) return;
@@ -33,6 +36,9 @@ const HomePage = ({ setPage, socketClient, activeUserCount }: props) => {
 
   return (
     <div className="relative flex h-full flex-col items-center justify-center gap-4">
+      <div className="absolute top-0 right-0 p-4">
+        <Switch checked={theme == "light"} onCheckedChange={(checked) => setTheme(checked ? "light" : "dark")} />
+      </div>
       <Card className="p-4">
         <BotMessageSquare className="h-10 w-10 text-primary" strokeWidth={1.5} />
       </Card>
