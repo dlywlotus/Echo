@@ -143,7 +143,7 @@ const ChatPage = ({ setPage, socketClient, roomDetails, currentUserId }: props) 
           <CardTitle>
             {roomDetails?.userOneId == currentUserId ? roomDetails?.userTwoName : roomDetails?.userOneName}
           </CardTitle>
-          {isTyping() && <CardDescription>typing...</CardDescription>}
+          <CardDescription className={isTyping() ? "opacity-100" : "opacity-0"}>typing...</CardDescription>
           <CardAction>
             <Button size={"sm"} onClick={onLeaveRoom}>
               Leave

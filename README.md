@@ -7,6 +7,10 @@ Connect with other users and chat anonymously
 - Front End: React, TailwindCss, StompJs
 - Back End: Spring Boot, Redis
 
+## Set up infrastructure
+
+- Run `docker compose up -d`
+
 ## Local Front end development
 
 - Navigate to /frontend folder
@@ -15,8 +19,7 @@ Connect with other users and chat anonymously
 ## Local backend development
 
 - Navigate to /backend folder
-- Run `docker compose up -d`
-- Create a run configuration for the app entry point with the following env variable: `spring.profiles.active=local`
+- Run `./mvnw spring-boot:run -Dspring-boot.run.profiles=local`
 
 ## Deployment
 
